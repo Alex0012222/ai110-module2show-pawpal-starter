@@ -5,12 +5,22 @@
 **a. Initial design**
 
 - Briefly describe your initial UML design.
+  - My design consist of having a calendar where users see all their Tasks. Works like a calendar and has O(1) runtime when trying to find the month/week/day but when it tries to look for a Task it has a O(n).
 - What classes did you include, and what responsibilities did you assign to each?
+  - I included Task -> Calendar -> User but Task has subclasses for different type of tasks, and User is being pointed by Pet and Availableschedule which are classes to handle the User's Availableschedule's set and the list of pets.
+  - To break it down even further, Task has 5 subclasses (Petwalk, Feeding, Medication, VetVisit, and other). All of them share a Date and Time variable from Task. The most complex out of the bunch are Medication and VetVisit. The Medication class handles timesPerDay, drugName, doseCounter, and logDoseTaken(), VetVisit on the other hand only has requiredDocumenttion.
+  - Calendar is another sophisticated class which handles the Schedule ( list(list(LinkedList<Task>)) ) and the currentTime (a string with a
+    "xx-xx-xx" format).
+  - User has a name, an AvailabilitySchedule set, and a Pet list.
+  - Pet has name, age, favoriteFood, petType (string), foodRestrictions, and needGroom.
+  - AvailabilitySchedule has an name, time, description, and duration.
 
 **b. Design changes**
 
 - Did your design change during implementation?
+  - I had to make some changes because the logic was too complicated and hard to understand. When translating it to a real app, there were some aspects that made it
 - If yes, describe at least one change and why you made it.
+  I had to change the relationship between calendar and User. I also renamed everything so it aligns with step 2 planning
 
 ---
 
