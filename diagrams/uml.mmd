@@ -1,15 +1,82 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    %% ---------- Task hierarchy ----------
+    class Task {
+        <<abstract>>
+        #date : Date
+        #time : Time
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class PetWalk {
+        -durationMinutes : int
+        -distanceMiles : float
     }
 
-    ClassName --> AnotherClass : relationship
+    class Feeding {
+        -foodType : String
+    }
+
+    class Medication {
+        -drugName : String
+        -timesPerDay : int
+        -doseCounter : int
+        +logDoseTaken() void
+    }
+
+    class VetVisit {
+        -visitName : String
+        -description : String
+        -requiredDocumentation : String
+        -durationMinutes : int
+    }
+
+    class Other {
+        -taskName : String
+        -description : String
+        -durationMinutes : int
+    }
+
+    Task <|-- PetWalk
+    Task <|-- Feeding
+    Task <|-- Medication
+    Task <|-- VetVisit
+    Task <|-- Other
+
+    %% ---------- Calendar ----------
+    class Calendar {
+        -schedule : Task[month][week][day-bucket]
+        -currentDateTime : DateTime
+        +getTasks(month : int, week : int, day : int) List~Task~
+        +addTask(month : int, week : int, day : int, task : Task) void
+    }
+    note for Calendar "schedule is a 3D structure:\nindex 1 = month, index 2 = week.\nindex 3 (day) is NOT a fixed slot --\nit's a bucket / linked list of Task\nso any number of tasks can land\non the same day (like hash-table chaining)."
+
+    Calendar "1" *-- "many" Task : contains
+
+    %% ---------- User / Pet / Availability ----------
+    class User {
+        -name : String
+        -availabilitySchedules : Set~AvailabilitySchedule~
+        -pets : List~Pet~
+        +addPet(pet : Pet) void
+        +addAvailability(slot : AvailabilitySchedule) void
+    }
+
+    class Pet {
+        -name : String
+        -age : int
+        -favoriteFood : String
+        -petType : String
+        -foodRestrictions : String
+        -needsGroom : boolean
+    }
+
+    class AvailabilitySchedule {
+        -time : String
+        -name : String
+        -description : String
+        -durationMinutes : int
+    }
+
+    Calendar "many" --> "1" User : scheduled for
+    User "1" *-- "many" Pet : owns
+    User "1" *-- "many" AvailabilitySchedule : has
