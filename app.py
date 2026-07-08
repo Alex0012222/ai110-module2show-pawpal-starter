@@ -71,6 +71,7 @@ with add_pet_col:
             st.warning(f"{pet_name} is already one of {owner_name}'s pets.")
         else:
             owner.add_a_pet(Pet(pet_name, "", set(), set(), set()))
+            st.success(f"🐾 Added {pet_name} to {owner_name}'s pets!")
 
 species = st.selectbox("Species", ["dog", "cat", "other"])
 
@@ -100,6 +101,8 @@ with col5:
 if st.button("Add task"):
     if active_pet_name is None:
         st.warning("Add a pet before adding tasks.")
+    elif not task_title.strip():
+        st.error("Task title cannot be empty.")
     else:
         existing_tasks = [
             (t["Time"], t["duration_minutes"])
@@ -118,6 +121,7 @@ if st.button("Add task"):
                     "date": date.today(),
                 }
             )
+            st.success(f"✅ Added \"{task_title}\" for {active_pet_name} at {timme.strftime('%H:%M')}.")
 
 current_tasks = st.session_state.tasks_by_pet.get(active_pet_name, []) if active_pet_name else []
 if current_tasks:
@@ -145,17 +149,20 @@ if pet_names:
             )
             task_data["complete"] = now_complete
             recurrence = task_data.get("recurrence", "None")
-            if now_complete and not was_complete and recurrence != "None":
-                next_task = dict(task_data)
-                next_task["date"] = task_data.get("date", date.today()) + timedelta(
-                    days=1 if recurrence == "Daily" else 7
-                )
-                next_task["complete"] = False
-                newly_spawned.append(next_task)
-                st.success(
-                    f"{recurrence} task complete — scheduled \"{task_data['title']}\" for "
-                    f"{completion_pet_name} again on {next_task['date']}."
-                )
+            if now_complete and not was_complete:
+                if recurrence != "None":
+                    next_task = dict(task_data)
+                    next_task["date"] = task_data.get("date", date.today()) + timedelta(
+                        days=1 if recurrence == "Daily" else 7
+                    )
+                    next_task["complete"] = False
+                    newly_spawned.append(next_task)
+                    st.success(
+                        f"{recurrence} task complete — scheduled \"{task_data['title']}\" for "
+                        f"{completion_pet_name} again on {next_task['date']}."
+                    )
+                else:
+                    st.success(f"✅ Marked \"{task_data['title']}\" complete for {completion_pet_name}!")
         if newly_spawned:
             st.session_state.tasks_by_pet[completion_pet_name].extend(newly_spawned)
     else:
@@ -173,7 +180,10 @@ with button_col:
     generate_clicked = st.button("Generate schedule")
 
 if generate_clicked:
-    st.session_state.schedule_generated = True
+    if not pet_names:
+        st.warning("Add a pet and some tasks before generating a schedule.")
+    else:
+        st.session_state.schedule_generated = True
 
 with sort_col:
     if st.session_state.schedule_generated:
@@ -181,8 +191,9 @@ with sort_col:
     else:
         sort_choice = "Time"
 
-if generate_clicked:
+if generate_clicked and pet_names:
     today = date.today()
+    task_count = 0
     for pet in owner.get_pets():
         pet.set_task([])
         for task_data in st.session_state.tasks_by_pet.get(pet.get_name(), []):
@@ -197,6 +208,8 @@ if generate_clicked:
             if task_data.get("complete", False):
                 new_task.mark_complete()
             scheduler.add_task(owner, pet, new_task)
+            task_count += 1
+    st.success(f"📅 Schedule generated with {task_count} task(s) across {len(pet_names)} pet(s)!")
 
 if st.session_state.schedule_generated and pet_names:
     schedule_pet_name = st.selectbox("View schedule for", ["All"] + pet_names, key="schedule_pet_choice")

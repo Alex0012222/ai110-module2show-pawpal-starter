@@ -4,15 +4,29 @@ classDiagram
         <<abstract>>
         #date : Date
         #time : Time
+        #durationMinutes : int
+        #priority : String
+        #isComplete : boolean
+        +markComplete() void
+        +getDate() Date
+        +setDate(newDate : Date) void
+        +getTime() Time
+        +setTime(newTime : Time) void
+        +getDurationMinutes() int
+        +setDurationMinutes(minutes : int) void
+        +getIsComplete() boolean
+        +setIsComplete(value : boolean) void
     }
 
     class PetWalk {
-        -durationMinutes : int
         -distanceMiles : float
     }
+    note for PetWalk "BUG: constructor accepts distanceMiles\nbut never stores it -- no self.distance_miles\nand no getter/setter exist yet.\nAlso the only subclass with no priority param."
 
     class Feeding {
         -foodType : String
+        +getFoodType() String
+        +setFoodType(newFoodType : String) void
     }
 
     class Medication {
@@ -20,20 +34,32 @@ classDiagram
         -timesPerDay : int
         -doseCounter : int
         +logDoseTaken() void
+        +getDrugName() String
+        +setDrugName(newDrugName : String) void
+        +getTimesPerDay() int
+        +setTimesPerDay(n : int) void
+        +getDoseCounter() int
+        +setDoseCounter(n : int) void
     }
 
     class VetVisit {
         -visitName : String
         -description : String
         -requiredDocumentation : String
-        -durationMinutes : int
+        +getVisitName() String
+        +setVisitName(newVisitName : String) void
+        +getDescription() String
+        +setDescription(newDescription : String) void
+        +getRequiredDocumentation() String
+        +setRequiredDocumentation(doc : String) void
     }
 
     class Other {
         -taskName : String
-        -description : String
-        -durationMinutes : int
+        +getTaskName() String
+        +setTaskName(newTaskName : String) void
     }
+    note for Other "BUG: constructor accepts description\nbut never stores it -- no self.description\nand no getter/setter exist yet."
 
     Task <|-- PetWalk
     Task <|-- Feeding
@@ -41,42 +67,68 @@ classDiagram
     Task <|-- VetVisit
     Task <|-- Other
 
-    %% ---------- Calendar ----------
-    class Calendar {
-        -schedule : Task[month][week][day-bucket]
-        -currentDateTime : DateTime
-        +getTasks(month : int, week : int, day : int) List~Task~
-        +addTask(month : int, week : int, day : int, task : Task) void
-    }
-    note for Calendar "schedule is a 3D structure:\nindex 1 = month, index 2 = week.\nindex 3 (day) is NOT a fixed slot --\nit's a bucket / linked list of Task\nso any number of tasks can land\non the same day (like hash-table chaining)."
-
-    Calendar "1" *-- "many" Task : contains
-
-    %% ---------- User / Pet / Availability ----------
-    class User {
-        -name : String
-        -availabilitySchedules : Set~AvailabilitySchedule~
-        -pets : List~Pet~
-        +addPet(pet : Pet) void
-        +addAvailability(slot : AvailabilitySchedule) void
-    }
-
+    %% ---------- Pet ----------
     class Pet {
         -name : String
-        -age : int
-        -favoriteFood : String
-        -petType : String
-        -foodRestrictions : String
-        -needsGroom : boolean
+        -age : String
+        -favoriteFood : Set~String~
+        -foodRestriction : Set~String~
+        -medicineRestriction : Set~String~
+        -task : List~Task~
+        +getName() String
+        +setName(newName : String) void
+        +getAge() String
+        +setAge(newAge : String) void
+        +getFavoriteFood() Set~String~
+        +setFavoriteFood(foods : Set~String~) void
+        +addFavoriteFood(food : String) void
+        +removeFavoriteFood(food : String) boolean
+        +getFoodRestriction() Set~String~
+        +setFoodRestriction(r : Set~String~) void
+        +addFoodRestriction(r : String) void
+        +removeFoodRestriction(r : String) boolean
+        +getMedicineRestriction() Set~String~
+        +setMedicineRestriction(r : Set~String~) void
+        +addMedicineRestriction(r : String) void
+        +removeMedicineRestriction(r : String) boolean
+        +getTask() List~Task~
+        +setTask(tasks : List~Task~) void
+        +addTask(task : Task) void
+        +removeTask(task : Task) boolean
     }
+    note for Pet "petType and needsGroom from the original\ndesign were dropped; medicineRestriction\nis new. Pet now owns its own task list\ndirectly (this used to live on Calendar)."
 
-    class AvailabilitySchedule {
-        -time : String
+    %% ---------- Owner (was User) ----------
+    class Owner {
         -name : String
-        -description : String
-        -durationMinutes : int
+        -pets : List~Pet~
+        +getAllTasks() List~Task~
+        +getTodaysTasks(date : Date) void
+        +getPets() List~Pet~
+        +addAPet(pet : Pet) void
+        +removePet(pet : Pet) boolean
+        +setName(newName : String) void
     }
+    note for Owner "Renamed from User. availabilitySchedules\nwas dropped entirely -- AvailabilitySchedule\nno longer exists as a class."
 
-    Calendar "many" --> "1" User : scheduled for
-    User "1" *-- "many" Pet : owns
-    User "1" *-- "many" AvailabilitySchedule : has
+    Owner "1" *-- "many" Pet : owns
+    Pet "1" *-- "many" Task : owns
+
+    %% ---------- Scheduler (replaces Calendar) ----------
+    class Scheduler {
+        +sortTasksByTime(tasks : List~Task~) List~Task~
+        +sortTasksByPriority(tasks : List~Task~) List~Task~
+        +sortTasksByCompletion(tasks : List~Task~) List~Task~
+        +hasTimeConflict(existing : List~Tuple~, newTime : Time, newDuration : int) boolean
+        +getTasksForPet(pet : Pet) List~Task~
+        +getAllTasks(owner : Owner) List~Tuple~
+        +getTasksByDate(owner : Owner, date : Date) List~Tuple~
+        +addTask(owner : Owner, pet : Pet, task : Task) void
+        +removeTask(owner : Owner, pet : Pet, task : Task) boolean
+        +completeTask(owner : Owner, pet : Pet, task : Task) boolean
+    }
+    note for Scheduler "Replaces Calendar. Holds no state of its own --\nowner/pet/task are passed in as parameters on\nevery call, so this is a dependency (uses), not\nan association/composition like Calendar had."
+
+    Scheduler ..> Owner : uses
+    Scheduler ..> Pet : uses
+    Scheduler ..> Task : uses
