@@ -88,10 +88,10 @@ Sample test output:
 
 | Feature           | Method(s) | Notes                             |
 | ----------------- | --------- | --------------------------------- |
-| Task sorting      |           | e.g., by priority, duration       |
-| Filtering         |           | e.g., skip tasks if time runs out |
-| Conflict handling |           | e.g., overlapping time slots      |
-| Recurring tasks   |           | e.g., daily vs. weekly            |
+| Task sorting      |     _bubble_sort(), sort_tasks_by_priority()       | e.g., by priority, duration       |
+| Filtering         |  _bubble_sort() sort_tasks_by_time()         | e.g., skip tasks if time runs out |
+| Conflict handling | has_time_conflict()  _minutes_since_midnight()        | e.g., overlapping time slots      |
+| Recurring tasks   |    None     | e.g., daily vs. weekly            |
 
 ## 📸 Demo Walkthrough
 

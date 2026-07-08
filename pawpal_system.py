@@ -35,11 +35,12 @@ from datetime import date, time
 #   - get_x()/set_x() below are plain accessors for date/time/
 #     duration_minutes/is_complete; every subclass inherits them for free.
 class Task(ABC):
-    def __init__(self, task_date: date, task_time: time, duration_minutes: int = 0):
+    def __init__(self, task_date: date, task_time: time, duration_minutes: int = 0, priority : str = ""):
         """Initialize a task with its scheduled date, time, and duration."""
         self.date = task_date
         self.time = task_time
         self.duration_minutes = duration_minutes
+        self.priority = priority
         self.is_complete = False
 
     def mark_complete(self) -> None:
@@ -97,9 +98,9 @@ class PetWalk(Task):
 #   - get_food_type()/set_food_type(): accessors for the one attribute
 #     this subclass adds.
 class Feeding(Task):
-    def __init__(self, task_date: date, task_time: time, food_type: str):
+    def __init__(self, task_date: date, task_time: time, duration_minutes : int, priority : str, food_type: str):
         """Initialize a feeding with the type of food given."""
-        super().__init__(task_date, task_time)
+        super().__init__(task_date, task_time, duration_minutes, priority)
         self.food_type = food_type
 
     def get_food_type(self) -> str:
@@ -122,9 +123,9 @@ class Feeding(Task):
 #     this subclass adds; set_dose_counter() also doubles as a manual
 #     reset hook (e.g. set back to 0 at the start of a new day).
 class Medication(Task):
-    def __init__(self, task_date: date, task_time: time, drug_name: str, times_per_day: int):
+    def __init__(self, task_date: date, task_time: time, duration_minutes : int, priority : str,drug_name: str, times_per_day: int):
         """Initialize a medication with its drug name and doses per day."""
-        super().__init__(task_date, task_time)
+        super().__init__(task_date, task_time, duration_minutes, priority)
         self.drug_name = drug_name
         self.times_per_day = times_per_day
         self.dose_counter = 0
@@ -174,9 +175,10 @@ class VetVisit(Task):
         task_time: time,
         required_documentation: str,
         duration_minutes: int,
+        priority: str,
     ):
         """Initialize a vet visit with its name, description, and required documentation."""
-        super().__init__(task_date, task_time, duration_minutes)
+        super().__init__(task_date, task_time, duration_minutes, priority)
         self.visit_name = visit_name
         self.description = description
         self.required_documentation = required_documentation
@@ -213,11 +215,11 @@ class VetVisit(Task):
 #   - get_x()/set_x() below are plain accessors for the two attributes
 #     this subclass adds.
 class Other(Task):
-    def __init__(self, task_name: str, description: str, task_date: date, task_time: time, duration_minutes: int):
+    def __init__(self, task_name: str, description: str, task_date: date, task_time: time, duration_minutes: int, priority : str):
         """Initialize a catch-all task with its name and description."""
-        super().__init__(task_date, task_time, duration_minutes)
+        super().__init__(task_date, task_time, duration_minutes, priority)
         self.task_name = task_name
-        self.description = description
+
 
     def get_task_name(self) -> str:
         """Return the task's name."""
@@ -227,13 +229,6 @@ class Other(Task):
         """Set the task's name."""
         self.task_name = new_task_name
 
-    def get_description(self) -> str:
-        """Return the task's description."""
-        return self.description
-
-    def set_description(self, new_description: str) -> None:
-        """Set the task's description."""
-        self.description = new_description
 
 
 # ---------------------------------------------------------------------------
@@ -266,9 +261,9 @@ class Pet:
         self,
         name: str,
         age: str,
-        favorite_food: set[str] = None,
-        food_restriction: set[str] = None,
-        medicine_restriction: set[str] = None,
+        favorite_food: set[str] ,
+        food_restriction: set[str] ,
+        medicine_restriction: set[str] ,
     ):
         """Initialize a pet with its name, age, and preferences/restrictions."""
         self.name = name
@@ -478,9 +473,63 @@ class Scheduler:
         """Return the (date, time) tuple used to sort a task chronologically."""
         return (task.date, task.time)
 
+    @staticmethod
+    def _bubble_sort(tasks: list[Task], key) -> list[Task]:
+        """Return a new list of tasks ordered ascending by key, via bubble sort."""
+        ordered = list(tasks)
+        n = len(ordered)
+        for i in range(n - 1):
+            swapped = False
+            for j in range(n - 1 - i):
+                if key(ordered[j]) > key(ordered[j + 1]):
+                    ordered[j], ordered[j + 1] = ordered[j + 1], ordered[j]
+                    swapped = True
+            if not swapped:
+                break
+        return ordered
+
+    def sort_tasks_by_time(self, tasks: list[Task]) -> list[Task]:
+        """Return the given tasks ordered earliest to latest."""
+        return self._bubble_sort(tasks, key=self._sort_key)
+
+    def sort_tasks_by_priority(self, tasks: list[Task]) -> list[Task]:
+        """Return the given tasks ordered high priority first, then medium, then low."""
+        priority_rank = {"high": 0, "medium": 1, "low": 2}
+        return self._bubble_sort(
+            tasks, key=lambda task: priority_rank.get(task.priority, len(priority_rank))
+        )
+
+    def sort_tasks_by_completion(self, tasks: list[Task]) -> list[Task]:
+        """Return the given tasks ordered with uncompleted tasks first."""
+        return self._bubble_sort(tasks, key=lambda task: task.is_complete)
+
+    "After implemetation, _minutes_since_midnight() and has_time_conflict() were modified by Claude"
+    @staticmethod
+    def _minutes_since_midnight(moment: time) -> int:
+        """Return how many minutes past midnight the given time is."""
+        return moment.hour * 60 + moment.minute
+
+    @staticmethod
+    def has_time_conflict(
+        existing_tasks: list[tuple[time, int]], new_time: time, new_duration_minutes: int
+    ) -> bool:
+        """Return True if a new task would overlap any existing (time, duration) slot.
+
+        Each existing task is given as (start_time, duration_minutes); a task
+        occupies [start, start + duration), so back-to-back tasks don't conflict.
+        """
+        new_start = Scheduler._minutes_since_midnight(new_time)
+        new_end = new_start + new_duration_minutes
+        for existing_time, existing_duration_minutes in existing_tasks:
+            existing_start = Scheduler._minutes_since_midnight(existing_time)
+            existing_end = existing_start + existing_duration_minutes
+            if new_start < existing_end and existing_start < new_end:
+                return True
+        return False
+
     def get_tasks_for_pet(self, pet: Pet) -> list[Task]:
         """Return one pet's tasks, sorted earliest first."""
-        return sorted(pet.task, key=self._sort_key)
+        return pet.task
 
     def get_all_tasks(self, owner: Owner) -> list[tuple[Pet, Task]]:
         """Return every pet-task pair across the owner's pets, sorted earliest first."""
@@ -513,6 +562,5 @@ class Scheduler:
             raise ValueError(f"{pet.name} is not one of this owner's pets.")
         if task in pet.task:
             task.mark_complete()
-            # pet.remove_task(task)
             return True
         return False

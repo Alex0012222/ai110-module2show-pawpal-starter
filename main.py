@@ -1,11 +1,6 @@
 from pawpal_system import *
 
 
-def describe_task(task: Task) -> str:
-    status = "done" if task.get_is_complete() else "pending"
-    return f"{type(task).__name__} on {task.get_date()} at {task.get_time()} ({status})"
-
-
 def test_from_step_2():
     favorite_food : set[str] = ("Tuna cans", "Canip")
     Loki : Pet = Pet("loki","3", favorite_food, None, None)
@@ -29,12 +24,6 @@ def test_from_step_2():
     Goido.add_task(meds)
 
     Alex.get_todays_tasks(date(2026,7,7))
-
-    # for pet in all_pets:
-    #     print(f"Today's Schedule for {pet.get_name()}:")
-    #     for task in pet.get_task():
-    #         print(f"- {describe_task(task)}")
-
 
 
 
