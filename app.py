@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 import streamlit as st
 
@@ -85,7 +85,7 @@ if not pet_names:
 else:
     active_pet_name = st.selectbox("Adding tasks for", pet_names)
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     task_title = st.text_input("Task title", value="Morning walk")
 with col2:
@@ -94,6 +94,8 @@ with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
 with col4:
     timme = st.time_input("Time")
+with col5:
+    recurrence = st.selectbox("Recurrence", ["None", "Daily", "Weekly"])
 
 if st.button("Add task"):
     if active_pet_name is None:
@@ -107,7 +109,14 @@ if st.button("Add task"):
             st.warning(f"{active_pet_name} already has a task that overlaps {timme.strftime('%H:%M')}.")
         else:
             st.session_state.tasks_by_pet.setdefault(active_pet_name, []).append(
-                {"title": task_title, "duration_minutes": int(duration), "priority": priority, "Time": timme}
+                {
+                    "title": task_title,
+                    "duration_minutes": int(duration),
+                    "priority": priority,
+                    "Time": timme,
+                    "recurrence": recurrence,
+                    "date": date.today(),
+                }
             )
 
 current_tasks = st.session_state.tasks_by_pet.get(active_pet_name, []) if active_pet_name else []
@@ -126,12 +135,29 @@ if pet_names:
     completion_pet_name = st.selectbox("Update tasks for", pet_names, key="completion_pet_choice")
     completion_tasks = st.session_state.tasks_by_pet.get(completion_pet_name, [])
     if completion_tasks:
+        newly_spawned = []
         for index, task_data in enumerate(completion_tasks):
-            task_data["complete"] = st.checkbox(
+            was_complete = task_data.get("complete", False)
+            now_complete = st.checkbox(
                 f"{task_data['title']} — {task_data['Time'].strftime('%H:%M')}",
-                value=task_data.get("complete", False),
+                value=was_complete,
                 key=f"complete_{completion_pet_name}_{index}",
             )
+            task_data["complete"] = now_complete
+            recurrence = task_data.get("recurrence", "None")
+            if now_complete and not was_complete and recurrence != "None":
+                next_task = dict(task_data)
+                next_task["date"] = task_data.get("date", date.today()) + timedelta(
+                    days=1 if recurrence == "Daily" else 7
+                )
+                next_task["complete"] = False
+                newly_spawned.append(next_task)
+                st.success(
+                    f"{recurrence} task complete — scheduled \"{task_data['title']}\" for "
+                    f"{completion_pet_name} again on {next_task['date']}."
+                )
+        if newly_spawned:
+            st.session_state.tasks_by_pet[completion_pet_name].extend(newly_spawned)
     else:
         st.info(f"No tasks yet for {completion_pet_name}.")
 else:
@@ -211,3 +237,37 @@ if st.session_state.schedule_generated and pet_names:
         )
     else:
         st.info(f"No tasks to schedule yet for {schedule_pet_name}. Add one above.")
+
+st.divider()
+
+st.subheader("Recurring Tasks")
+st.caption("Daily and weekly tasks across all pets. Completing one above automatically schedules the next occurrence.")
+
+recurring_rows = []
+for pet_obj in owner.get_pets():
+    for task_data in st.session_state.tasks_by_pet.get(pet_obj.get_name(), []):
+        if task_data.get("recurrence", "None") in ("Daily", "Weekly"):
+            recurring_rows.append(
+                {
+                    "Pet": pet_obj.get_name(),
+                    "Task": task_data["title"],
+                    "Recurrence": task_data["recurrence"],
+                    "Time": task_data["Time"].strftime("%H:%M"),
+                    "Next date": task_data.get("date", date.today()),
+                    "Priority": task_data["priority"],
+                    "Complete": task_data.get("complete", False),
+                }
+            )
+
+if recurring_rows:
+    daily_rows = [row for row in recurring_rows if row["Recurrence"] == "Daily"]
+    weekly_rows = [row for row in recurring_rows if row["Recurrence"] == "Weekly"]
+
+    if daily_rows:
+        st.markdown("**Daily tasks**")
+        st.table(sorted(daily_rows, key=lambda row: (row["Pet"], row["Next date"])))
+    if weekly_rows:
+        st.markdown("**Weekly tasks**")
+        st.table(sorted(weekly_rows, key=lambda row: (row["Pet"], row["Next date"])))
+else:
+    st.info("No recurring tasks yet. Add a task above and set its Recurrence to Daily or Weekly.")

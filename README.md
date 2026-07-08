@@ -80,27 +80,33 @@ Sample test output:
 
 ```
 # Paste your pytest output here
+plugins: anyio-4.14.1
+collected 9 items
+
+test_pawpal.py .........                                                                                                                                [100%]
+
+===================================================================== 9 passed in 0.03s ======================================================================
 ```
 
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.
 
-| Feature           | Method(s) | Notes                             |
-| ----------------- | --------- | --------------------------------- |
-| Task sorting      |     _bubble_sort(), sort_tasks_by_priority()       | e.g., by priority, duration       |
-| Filtering         |  _bubble_sort() sort_tasks_by_time()         | e.g., skip tasks if time runs out |
-| Conflict handling | has_time_conflict()  _minutes_since_midnight()        | e.g., overlapping time slots      |
-| Recurring tasks   |    None     | e.g., daily vs. weekly            |
+| Feature           | Method(s)                                      | Notes                             |
+| ----------------- | ---------------------------------------------- | --------------------------------- |
+| Task sorting      | \_bubble_sort(), sort_tasks_by_priority()      | e.g., by priority, duration       |
+| Filtering         | \_bubble_sort() sort_tasks_by_time()           | e.g., skip tasks if time runs out |
+| Conflict handling | has_time_conflict() \_minutes_since_midnight() | e.g., overlapping time slots      |
+| Recurring tasks   | None, the app shows them as they are           | e.g., daily vs. weekly            |
 
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1. <!-- opens app, and adds a pet(mochi) -->
+2. <!-- adds 3 tasks to mochi (pet walk, meds, breakfast) with different priority -->
+3. <!-- Marks Pet walk as completed -->
+4. <!-- Asks the app to generate a schedule -->
+5. <!-- sorts tasks by time, and then by priority -->
 
 **Screenshot or video** _(optional)_: <!-- Insert a screenshot or link to a demo video here -->
