@@ -103,10 +103,10 @@ test_pawpal.py .........                                                        
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- opens app, and adds a pet(mochi) -->
-2. <!-- adds 3 tasks to mochi (pet walk, meds, breakfast) with different priority -->
-3. <!-- Marks Pet walk as completed -->
-4. <!-- Asks the app to generate a schedule -->
-5. <!-- sorts tasks by time, and then by priority -->
+1. opens app, and adds a pet(mochi)
+2. adds 3 tasks to mochi (pet walk, meds, breakfast) with different priority
+3. Marks Pet walk as completed
+4. Asks the app to generate a schedule
+5. sorts tasks by time, and then by priority
 
 **Screenshot or video** _(optional)_: <!-- Insert a screenshot or link to a demo video here -->
